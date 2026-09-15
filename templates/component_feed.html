@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-  <title>{{.Component.Name}} — Component Feed</title>
+  <title>{{.Component.Name}} — Лента компонентов</title>
   <link rel="stylesheet" href="/static/css/availability.css">
 </head>
 <body>
@@ -25,24 +25,39 @@
           <div class="brand brand--light">
             <img
               class="brand__mark"
-              src="http://localhost:9001/api/v1/download-shared-object/aHR0cDovLzEyNy4wLjAuMTo5MDAwL21lZGlhLyVEMSU4MyVEMCVCMSVEMCVCQiVEMSU4RSVEMCVCNCVEMSU4MSVEMCVCQSVEMCVCMCVEMSU4RiUyMCVEMSU4NSVEMSU4MyVEMCVCOSVEMCVCRCVEMSU4Ri1QaG90b3Jvb20ucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9R0NRM0xZWlVLNjRPWFA2RlZGMUslMkYyMDI2MDkwMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNjA5MDJUMTEwMjM1WiZYLUFtei1FeHBpcmVzPTQzMjAwJlgtQW16LVNlY3VyaXR5LVRva2VuPWV5SmhiR2NpT2lKSVV6VXhNaUlzSW5SNWNDSTZJa3BYVkNKOS5leUpoWTJObGMzTkxaWGtpT2lKSFExRXpURmxhVlVzMk5FOVlVRFpHVmtZeFN5SXNJbVY0Y0NJNk1UYzRPRE00TmpZeE9Dd2ljR0Z5Wlc1MElqb2ljbTl2ZENKOS5xT3NNT3J6ZFpkU1BVQUFnQ2NVcHY1My1mbTZqRGxBV1JiTTdnd0NzRnBFdC1DMXhUT01FVmNDdzFjdmo0MlVrUnBCMWtYM3g5aGIxSUw1VHA2M1E4USZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmdmVyc2lvbklkPW51bGwmWC1BbXotU2lnbmF0dXJlPTljMWNhOTU1ZDkxZDI0M2I3ZWJhZjhjODI0NDRjODI3MTc0ZmNiZTE1NWNlZTllNDIwNGY0ZWYyY2Q2MGYwODA"
+              src="http://localhost:9000/media/%D1%83%D0%B1%D0%BB%D1%8E%D0%B4%D1%81%D0%BA%D0%B0%D1%8F%20%D1%85%D1%83%D0%B9%D0%BD%D1%8F-Photoroom.png"
               alt="ManageEngine"
             >
             <span class="brand__name">ManageEngine</span>
           </div>
-          <span class="status-badge status-badge--published">{{.Component.Status}}</span>
         </header>
 
-        <aside class="feed__actions">
-          <span class="feed__action" title="Share">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 16.1a2.9 2.9 0 0 0-2.3 1.1l-6.3-3.2a3 3 0 0 0 0-1.9l6.3-3.2A2.9 2.9 0 1 0 15 7a2.8 2.8 0 0 0 .1.7L8.8 11a2.9 2.9 0 1 0 0 2.1l6.3 3.2A2.8 2.8 0 0 0 15 17a2.9 2.9 0 1 0 3-2.9z"/></svg>
-          </span>
-          <span class="feed__action" title="Likes">
+        <aside class="feed__actions" aria-label="Параметры и действия компонента">
+          <div class="feed__metric">
+            <span class="feed__metric-label">Доступность</span>
+            <strong class="feed__metric-value">{{printf "%.2f" .Component.UptimePercent}}%</strong>
+          </div>
+          <div class="feed__metric">
+            <span class="feed__metric-label">Влияние на систему</span>
+            <strong class="feed__metric-value">{{printf "%.2f" .Component.SystemImpact}}%</strong>
+          </div>
+          <button
+            class="feed__action feed__action--like"
+            type="button"
+            title="Поставить лайк"
+            aria-label="Поставить лайк"
+          >
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12.1 20.3 4.6 13a5.2 5.2 0 0 1 7.4-7.3l.1.1.1-.1a5.2 5.2 0 0 1 7.4 7.3l-7.5 7.3z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
             <span class="feed__likes-count">{{.LikesCount}}</span>
-          </span>
-          <a class="feed__action" href="/component/{{.Component.ID}}?next=true" title="Next component">
+          </button>
+          <a
+            class="feed__action feed__action--next"
+            href="/component/{{.Component.ID}}?next=true"
+            title="Пролистать дальше"
+            aria-label="Пролистать дальше"
+          >
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 4a1 1 0 0 1 1 1v11.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.4L11 16.6V5a1 1 0 0 1 1-1z"/></svg>
+            <span class="feed__action-label">Пролистать дальше</span>
           </a>
         </aside>
 
@@ -58,24 +73,14 @@
             <label
               class="feed__more feed__description-more"
               for="description-toggle-{{.Component.ID}}"
-            >MORE</label>
+            >ЕЩЁ</label>
             <div class="feed__description-expanded">
               <p>{{.Component.Description}}</p>
               <label
                 class="feed__more feed__description-less"
                 for="description-toggle-{{.Component.ID}}"
-              >LESS</label>
+              >СВЕРНУТЬ</label>
             </div>
-          </div>
-          <div class="feed__tags">
-            <span class="feed__tag feed__tag--type">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 3 4 7v10l8 4 8-4V7l-8-4zm0 2.2 5.5 2.7L12 10.7 6.5 7.9 12 5.2zM6 9.3l5 2.5v7.1l-5-2.5V9.3zm7 9.6v-7.1l5-2.5v7.1l-5 2.5z"/></svg>
-              Type: {{.Component.ConfigType}}
-            </span>
-            <span class="feed__tag feed__tag--uptime">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.2 16.6 4.8 12l1.4-1.4 3 3 8-8L18.6 7l-9.4 9.6z"/></svg>
-              Uptime: {{printf "%.2f" .Component.UptimePercent}}%
-            </span>
           </div>
         </div>
       </article>

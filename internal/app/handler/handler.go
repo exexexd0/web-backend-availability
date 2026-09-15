@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"math"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -37,7 +38,7 @@ func (h *Handler) GetComponents(ctx *gin.Context) {
 	components, err := h.Repository.GetComponents()
 	if err != nil {
 		logrus.Error(err)
-		ctx.String(statusInternalServerError, "failed to load components")
+		ctx.String(statusInternalServerError, "Не удалось загрузить компоненты")
 		return
 	}
 
@@ -46,8 +47,8 @@ func (h *Handler) GetComponents(ctx *gin.Context) {
 	hasFilter := false
 	if uptimeFilterStr != "" {
 		parsed, parseErr := strconv.ParseFloat(uptimeFilterStr, 64)
-		if parseErr != nil {
-			ctx.String(statusBadRequest, "invalid uptime_percent")
+		if parseErr != nil || math.IsNaN(parsed) || math.IsInf(parsed, 0) || parsed < 0 || parsed > 100 {
+			ctx.String(statusBadRequest, "Некорректное значение uptime_percent: укажите число от 0 до 100")
 			return
 		}
 		uptimeFilter = parsed
@@ -82,7 +83,7 @@ func (h *Handler) GetComponent(ctx *gin.Context) {
 	components, err := h.Repository.GetComponents()
 	if err != nil {
 		logrus.Error(err)
-		ctx.String(statusInternalServerError, "failed to load components")
+		ctx.String(statusInternalServerError, "Не удалось загрузить компоненты")
 		return
 	}
 
@@ -93,7 +94,7 @@ func (h *Handler) GetComponent(ctx *gin.Context) {
 		}
 	}
 	if len(published) == 0 {
-		ctx.String(statusNotFound, "no published components")
+		ctx.String(statusNotFound, "Опубликованные компоненты не найдены")
 		return
 	}
 
@@ -106,7 +107,7 @@ func (h *Handler) GetComponent(ctx *gin.Context) {
 	} else {
 		id, parseErr := strconv.Atoi(idStr)
 		if parseErr != nil {
-			ctx.String(statusBadRequest, "invalid component id")
+			ctx.String(statusBadRequest, "Некорректный идентификатор компонента")
 			return
 		}
 		idx := -1
@@ -117,7 +118,7 @@ func (h *Handler) GetComponent(ctx *gin.Context) {
 			}
 		}
 		if idx < 0 {
-			ctx.String(statusNotFound, "component not found")
+			ctx.String(statusNotFound, "Компонент не найден")
 			return
 		}
 		if wantNext {
@@ -137,7 +138,7 @@ func (h *Handler) AddComponent(ctx *gin.Context) {
 	draft, err := h.Repository.GetDraftComponent()
 	if err != nil {
 		logrus.Error(err)
-		ctx.String(statusNotFound, "draft component not found")
+		ctx.String(statusNotFound, "Черновой компонент не найден")
 		return
 	}
 

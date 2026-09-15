@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-  <title>System Components — Grid</title>
+  <title>Компоненты системы — Список</title>
   <link rel="stylesheet" href="/static/css/availability.css">
 </head>
 <body>
@@ -14,32 +14,39 @@
           <div class="brand">
             <img
               class="brand__mark"
-              src="http://localhost:9001/api/v1/download-shared-object/aHR0cDovLzEyNy4wLjAuMTo5MDAwL21lZGlhLyVEMSU4MyVEMCVCMSVEMCVCQiVEMSU4RSVEMCVCNCVEMSU4MSVEMCVCQSVEMCVCMCVEMSU4RiUyMCVEMSU4NSVEMSU4MyVEMCVCOSVEMCVCRCVEMSU4Ri1QaG90b3Jvb20ucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9R0NRM0xZWlVLNjRPWFA2RlZGMUslMkYyMDI2MDkwMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNjA5MDJUMTEwMjM1WiZYLUFtei1FeHBpcmVzPTQzMjAwJlgtQW16LVNlY3VyaXR5LVRva2VuPWV5SmhiR2NpT2lKSVV6VXhNaUlzSW5SNWNDSTZJa3BYVkNKOS5leUpoWTJObGMzTkxaWGtpT2lKSFExRXpURmxhVlVzMk5FOVlVRFpHVmtZeFN5SXNJbVY0Y0NJNk1UYzRPRE00TmpZeE9Dd2ljR0Z5Wlc1MElqb2ljbTl2ZENKOS5xT3NNT3J6ZFpkU1BVQUFnQ2NVcHY1My1mbTZqRGxBV1JiTTdnd0NzRnBFdC1DMXhUT01FVmNDdzFjdmo0MlVrUnBCMWtYM3g5aGIxSUw1VHA2M1E4USZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmdmVyc2lvbklkPW51bGwmWC1BbXotU2lnbmF0dXJlPTljMWNhOTU1ZDkxZDI0M2I3ZWJhZjhjODI0NDRjODI3MTc0ZmNiZTE1NWNlZTllNDIwNGY0ZWYyY2Q2MGYwODA"
+              src="http://localhost:9000/media/%D1%83%D0%B1%D0%BB%D1%8E%D0%B4%D1%81%D0%BA%D0%B0%D1%8F%20%D1%85%D1%83%D0%B9%D0%BD%D1%8F-Photoroom.png"
               alt="ManageEngine"
             >
             <span class="brand__name">ManageEngine</span>
           </div>
         </header>
 
-        <form class="uptime-filter" action="/components" method="get">
-          <svg class="uptime-filter__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M10.5 3a7.5 7.5 0 0 1 5.9 12.1l3.7 3.8a1 1 0 0 1-1.4 1.4l-3.8-3.7A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z"/>
-          </svg>
-          <input
-            class="uptime-filter__input"
-            id="uptime_filter_input"
-            name="uptime_percent"
-            type="number"
-            step="0.01"
-            min="0"
-            max="100"
-            placeholder="Min uptime %, e.g. 99.90"
-            value="{{.UptimeFilter}}"
-          >
-          <button class="uptime-filter__submit" type="submit">Filter</button>
+        <form class="uptime-filter" action="/components" method="get" aria-label="Фильтр по доступности">
+          <div class="uptime-filter__head">
+            <label class="uptime-filter__label" for="uptime_filter_input">Минимальная доступность</label>
+            <output class="uptime-filter__value" id="uptime_filter_value" for="uptime_filter_input">
+              {{if .UptimeFilter}}{{.UptimeFilter}}{{else}}0{{end}}%
+            </output>
+          </div>
+          <div class="uptime-filter__control">
+            <svg class="uptime-filter__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M10.5 3a7.5 7.5 0 0 1 5.9 12.1l3.7 3.8a1 1 0 0 1-1.4 1.4l-3.8-3.7A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z"/>
+            </svg>
+            <input
+              class="uptime-filter__input"
+              id="uptime_filter_input"
+              name="uptime_percent"
+              type="range"
+              step="0.01"
+              min="0"
+              max="100"
+              value="{{if .UptimeFilter}}{{.UptimeFilter}}{{else}}0{{end}}"
+            >
+          </div>
+          <button class="uptime-filter__submit" type="submit">Применить</button>
         </form>
 
-        <section class="component-grid" aria-label="Published system components">
+        <section class="component-grid" aria-label="Опубликованные компоненты системы">
           {{range .Components}}
           <a class="component-card" href="/component/{{.ID}}">
             <div class="component-card__media">
@@ -55,12 +62,12 @@
                 <span class="component-card__uptime-icon">
                   <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.2 16.6 4.8 12l1.4-1.4 3 3 8-8L18.6 7l-9.4 9.6z"/></svg>
                 </span>
-                {{printf "%.2f" .UptimePercent}}%
+                Доступность: {{printf "%.2f" .UptimePercent}}%
               </div>
             </div>
           </a>
           {{else}}
-          <p class="grid-empty">No published components match this uptime filter.</p>
+          <p class="grid-empty">Нет опубликованных компонентов с такой доступностью.</p>
           {{end}}
         </section>
       </div>
@@ -68,5 +75,6 @@
 
     {{template "tab_bar" .}}
   </div>
+  <script src="/static/js/availability.js" defer></script>
 </body>
 </html>
