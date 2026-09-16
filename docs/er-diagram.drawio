@@ -1,0 +1,108 @@
+<mxfile host="65bd71144e">
+    <diagram id="er-lab2" name="ER Lab 2">
+        <mxGraphModel dx="464" dy="414" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="ER-диаграмма: оценка отказоустойчивости системы&#10;FK: ON DELETE RESTRICT / ON UPDATE RESTRICT (каскадное удаление запрещено)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="40" y="20" width="720" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="users" value="users" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#214285;strokeColor=#6c8ebf;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="120" width="280" height="142" as="geometry"/>
+                </mxCell>
+                <mxCell id="users_pk" value="PK  id : bigint" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=1" parent="users" vertex="1">
+                    <mxGeometry y="30" width="280" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="users_login" value="UK  login : varchar(25) NOT NULL" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="users" vertex="1">
+                    <mxGeometry y="58" width="280" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="users_password" value="password : varchar(100) NOT NULL" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="users" vertex="1">
+                    <mxGeometry y="86" width="280" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="users_mod" value="is_moderator : boolean NOT NULL DEFAULT false" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="users" vertex="1">
+                    <mxGeometry y="114" width="280" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="components" value="components (услуги)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#AB7538;strokeColor=#82b366;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="480" y="90" width="360" height="382" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_id" value="PK  id : bigint" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=1" parent="components" vertex="1">
+                    <mxGeometry y="30" width="360" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_name" value="name : varchar(100) NOT NULL" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="components" vertex="1">
+                    <mxGeometry y="56" width="360" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_short" value="short_description : varchar(255) NOT NULL" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="components" vertex="1">
+                    <mxGeometry y="82" width="360" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_desc" value="description : varchar(1000) NOT NULL" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="components" vertex="1">
+                    <mxGeometry y="108" width="360" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_status" value="status : varchar(20) NOT NULL&#10;(draft / published / deleted)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="components" vertex="1">
+                    <mxGeometry y="134" width="360" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_img" value="image_url : varchar(500) NOT NULL" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="components" vertex="1">
+                    <mxGeometry y="170" width="360" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_vid" value="video_url : varchar(500) NOT NULL" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="components" vertex="1">
+                    <mxGeometry y="196" width="360" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_cfg" value="config_type : varchar(30) NOT NULL" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="components" vertex="1">
+                    <mxGeometry y="222" width="360" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_up" value="uptime_percent : real NOT NULL" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="components" vertex="1">
+                    <mxGeometry y="248" width="360" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_imp" value="system_impact : real NOT NULL" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="components" vertex="1">
+                    <mxGeometry y="274" width="360" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_created" value="created_at : timestamptz NOT NULL" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="components" vertex="1">
+                    <mxGeometry y="300" width="360" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_formed" value="formed_at : timestamptz NULL" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="components" vertex="1">
+                    <mxGeometry y="326" width="360" height="26" as="geometry"/>
+                </mxCell>
+                <mxCell id="c_creator" value="FK  creator_id : bigint NOT NULL → users.id" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=1" parent="components" vertex="1">
+                    <mxGeometry y="352" width="360" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="likes" value="component_likes (M:N)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#27A344;strokeColor=#d6b656;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="520" width="360" height="142" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_id" value="PK  id : bigint" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=1" parent="likes" vertex="1">
+                    <mxGeometry y="30" width="360" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_user" value="FK  user_id : bigint NOT NULL → users.id" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=1" parent="likes" vertex="1">
+                    <mxGeometry y="58" width="360" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_comp" value="FK  component_id : bigint NOT NULL → components.id" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=1" parent="likes" vertex="1">
+                    <mxGeometry y="86" width="360" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="l_uq" value="UK (user_id, component_id)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" parent="likes" vertex="1">
+                    <mxGeometry y="114" width="360" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel1" value="&lt;font color=&quot;#080808&quot;&gt;создаёт&lt;br&gt;&lt;/font&gt;&lt;font color=&quot;#000000&quot;&gt;1 : N&lt;br&gt;&lt;/font&gt;&lt;font color=&quot;#080808&quot;&gt;RESTRICT&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;strokeWidth=2;fontSize=11;labelBackgroundColor=#ffffff;" parent="1" source="users" target="components" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="rel2" value="ставит лайк&#10;1 : N&#10;RESTRICT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;strokeWidth=2;fontSize=11;labelBackgroundColor=#ffffff;" parent="1" source="users" target="likes" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="160" y="440"/>
+                            <mxPoint x="160" y="595"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="rel3" value="получает лайк&#10;1 : N&#10;RESTRICT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;strokeWidth=2;fontSize=11;labelBackgroundColor=#ffffff;" parent="1" source="components" target="likes" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="700" y="560"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="note" value="Инвариант: у пользователя не более одной услуги со status = draft&#10;(уникальный частичный индекс idx_components_one_draft_per_user)" style="shape=note;whiteSpace=wrap;html=1;size=14;fontSize=11;align=left;spacingLeft=8;" parent="1" vertex="1">
+                    <mxGeometry x="640" y="520" width="300" height="80" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
