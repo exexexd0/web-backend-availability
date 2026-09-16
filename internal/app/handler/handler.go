@@ -1,19 +1,23 @@
 package handler
 
 import (
-	"math"
+	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/one-compressive/web-backend-availability/internal/app/ds"
 	"github.com/one-compressive/web-backend-availability/internal/app/repository"
-	"github.com/sirupsen/logrus"
 )
 
 const (
-	statusOK                  = 200
-	statusBadRequest          = 400
-	statusNotFound            = 404
-	statusInternalServerError = 500
+	statusOK                  = http.StatusOK
+	statusBadRequest          = http.StatusBadRequest
+	statusNotFound            = http.StatusNotFound
+	statusInternalServerError = http.StatusInternalServerError
+
+	defaultImageURL = "/static/img/default.jpg"
+	defaultVideoURL = "/static/img/default.mp4"
 )
 
 type Handler struct {
@@ -21,129 +25,69 @@ type Handler struct {
 }
 
 func NewHandler(r *repository.Repository) *Handler {
-	return &Handler{
-		Repository: r,
+	return &Handler{Repository: r}
+}
+
+func (h *Handler) RegisterHandler(router *gin.Engine) {
+	router.GET("/components", h.GetComponents)
+	router.GET("/component/:id", h.GetComponent)
+	router.GET("/add_component", h.GetAddComponent)
+	router.POST("/components", h.CreateComponent)
+	router.POST("/components/:id/publish", h.PublishComponent)
+	router.POST("/components/:id/delete", h.DeleteComponent)
+}
+
+func (h *Handler) RegisterStatic(router *gin.Engine) {
+	router.LoadHTMLGlob("./templates/*")
+	router.Static("/static", "./static")
+}
+
+func resolveMedia(imageURL, videoURL string) (string, string) {
+	if strings.TrimSpace(imageURL) == "" {
+		imageURL = defaultImageURL
 	}
+	if strings.TrimSpace(videoURL) == "" {
+		videoURL = defaultVideoURL
+	}
+	return imageURL, videoURL
+}
+
+func (h *Handler) feedURL() string {
+	id, err := h.Repository.GetFirstPublishedID()
+	if err != nil || id == 0 {
+		return "/components"
+	}
+	return "/component/" + strconv.FormatUint(uint64(id), 10)
 }
 
 type componentCard struct {
-	ID            int
+	ID            uint
 	Name          string
 	ImageURL      string
 	UptimePercent float32
-	LikesCount    int
+	LikesCount    int64
 }
 
-func (h *Handler) GetComponents(ctx *gin.Context) {
-	components, err := h.Repository.GetComponents()
-	if err != nil {
-		logrus.Error(err)
-		ctx.String(statusInternalServerError, "Не удалось загрузить компоненты")
-		return
+func pageData(activeTab, feedURL string, extra gin.H) gin.H {
+	data := gin.H{
+		"ActiveTab": activeTab,
+		"FeedURL":   feedURL,
 	}
-
-	uptimeFilterStr := ctx.Query("uptime_percent")
-	var uptimeFilter float64
-	hasFilter := false
-	if uptimeFilterStr != "" {
-		parsed, parseErr := strconv.ParseFloat(uptimeFilterStr, 64)
-		if parseErr != nil || math.IsNaN(parsed) || math.IsInf(parsed, 0) || parsed < 0 || parsed > 100 {
-			ctx.String(statusBadRequest, "Некорректное значение uptime_percent: укажите число от 0 до 100")
-			return
-		}
-		uptimeFilter = parsed
-		hasFilter = true
+	for k, v := range extra {
+		data[k] = v
 	}
-
-	cards := make([]componentCard, 0, len(components))
-	for _, component := range components {
-		if component.Status != repository.StatusPublished {
-			continue
-		}
-		if hasFilter && float64(component.UptimePercent) < uptimeFilter {
-			continue
-		}
-		cards = append(cards, componentCard{
-			ID:            component.ID,
-			Name:          component.Name,
-			ImageURL:      component.ImageURL,
-			UptimePercent: component.UptimePercent,
-			LikesCount:    len(component.Likes),
-		})
-	}
-
-	ctx.HTML(statusOK, "component_grid.html", gin.H{
-		"ActiveTab":    "grid",
-		"Components":   cards,
-		"UptimeFilter": uptimeFilterStr,
-	})
+	return data
 }
 
-func (h *Handler) GetComponent(ctx *gin.Context) {
-	components, err := h.Repository.GetComponents()
-	if err != nil {
-		logrus.Error(err)
-		ctx.String(statusInternalServerError, "Не удалось загрузить компоненты")
-		return
-	}
-
-	published := make([]repository.Component, 0)
-	for _, c := range components {
-		if c.Status == repository.StatusPublished {
-			published = append(published, c)
-		}
-	}
-	if len(published) == 0 {
-		ctx.String(statusNotFound, "Опубликованные компоненты не найдены")
-		return
-	}
-
-	idStr := ctx.Param("id")
-	wantNext := ctx.Query("next") == "true"
-
-	var current repository.Component
-	if idStr == "" {
-		current = published[0]
-	} else {
-		id, parseErr := strconv.Atoi(idStr)
-		if parseErr != nil {
-			ctx.String(statusBadRequest, "Некорректный идентификатор компонента")
-			return
-		}
-		idx := -1
-		for i, c := range published {
-			if c.ID == id {
-				idx = i
-				break
-			}
-		}
-		if idx < 0 {
-			ctx.String(statusNotFound, "Компонент не найден")
-			return
-		}
-		if wantNext {
-			idx = (idx + 1) % len(published)
-		}
-		current = published[idx]
-	}
-
-	ctx.HTML(statusOK, "component_feed.html", gin.H{
-		"ActiveTab":  "feed",
-		"Component":  current,
-		"LikesCount": len(current.Likes),
-	})
+func withResolvedMedia(component ds.Component) ds.Component {
+	component.ImageURL, component.VideoURL = resolveMedia(component.ImageURL, component.VideoURL)
+	return component
 }
 
-func (h *Handler) AddComponent(ctx *gin.Context) {
-	draft, err := h.Repository.GetDraftComponent()
+func parseID(idStr string) (uint, error) {
+	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		logrus.Error(err)
-		ctx.String(statusNotFound, "Черновой компонент не найден")
-		return
+		return 0, err
 	}
-
-	ctx.HTML(statusOK, "component_add.html", gin.H{
-		"ActiveTab": "add",
-		"Component": draft,
-	})
+	return uint(id), nil
 }

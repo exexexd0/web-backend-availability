@@ -1,6 +1,6 @@
 {{define "tab_bar"}}
 <nav class="tab-bar" aria-label="Основная навигация">
-  <a href="/component" class="tab-bar__item{{if eq .ActiveTab "feed"}} tab-bar__item--active{{end}}">
+  <a href="{{.FeedURL}}" class="tab-bar__item{{if eq .ActiveTab "feed"}} tab-bar__item--active{{end}}">
     <span class="tab-bar__icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 4h10a2 2 0 0 1 2 2v2.2l3.2-1.8a1 1 0 0 1 1.5.9v8.4a1 1 0 0 1-1.5.9L16 14.8V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 2v12h10V6H4zm14 3.5-2 1.1v2.8l2 1.1V9.5z"/></svg>
     </span>

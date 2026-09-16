@@ -755,12 +755,39 @@ textarea.form-field__control {
 }
 
 .component-card {
+  position: relative;
   background: var(--me-white);
   border: 1px solid var(--me-border);
   border-radius: var(--radius);
   overflow: hidden;
   box-shadow: var(--me-shadow);
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.component-card__delete {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+}
+
+.component-card__delete button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.component-card__delete svg {
+  width: 14px;
+  height: 14px;
+  fill: #b42318;
 }
 
 .component-card:hover {
