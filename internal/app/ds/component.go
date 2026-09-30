@@ -44,21 +44,29 @@ func (c ConfigType) Label() string {
 	}
 }
 
+func (c ConfigType) IsValid() bool {
+	switch c {
+	case ConfigTypeSingle, ConfigTypeClustering, ConfigTypeReplication:
+		return true
+	default:
+		return false
+	}
+}
+
 type Component struct {
-	ID               uint       `gorm:"primaryKey"`
-	Name             string     `gorm:"type:varchar(100);not null"`
-	ShortDescription string     `gorm:"type:varchar(255);not null;default:''"`
-	Description      string     `gorm:"type:varchar(1000);not null;default:''"`
-	Status           Status     `gorm:"type:varchar(20);not null"`
-	ImageURL         string     `gorm:"type:varchar(500);not null;default:''"`
-	VideoURL         string     `gorm:"type:varchar(500);not null;default:''"`
-	ConfigType       ConfigType `gorm:"type:varchar(30);not null;default:''"`
-	UptimePercent    float32    `gorm:"type:real;not null;default:0"`
-	SystemImpact     float32    `gorm:"type:real;not null;default:0"`
-	CreatedAt        time.Time  `gorm:"not null"`
-	FormedAt         *time.Time
-	CreatorID        uint `gorm:"not null"`
-	Creator          User `gorm:"foreignKey:CreatorID;constraint:OnUpdate:RESTRICT,OnDelete:RESTRICT"`
+	ID            uint       `gorm:"primaryKey"`
+	Name          string     `gorm:"type:varchar(100);not null"`
+	Description   string     `gorm:"type:varchar(1000);not null;default:''"`
+	Status        Status     `gorm:"type:varchar(20);not null"`
+	ImageURL      string     `gorm:"type:varchar(500);not null;default:''"`
+	VideoURL      string     `gorm:"type:varchar(500);not null;default:''"`
+	ConfigType    ConfigType `gorm:"type:varchar(30);not null;default:''"`
+	UptimePercent *float32   `gorm:"type:real"`
+	SystemImpact  *float32   `gorm:"type:real"`
+	CreatedAt     time.Time  `gorm:"not null"`
+	FormedAt      *time.Time `gorm:"type:timestamptz"`
+	CreatorID     uint       `gorm:"not null"`
+	Creator       User       `gorm:"foreignKey:CreatorID;constraint:OnUpdate:RESTRICT,OnDelete:RESTRICT"`
 }
 
 func (Component) TableName() string {

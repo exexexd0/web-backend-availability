@@ -26,38 +26,39 @@
 
         <h1 class="add-page__title">Новый компонент системы</h1>
         {{if .HasDraft}}
-        <p class="add-page__subtitle">Заполните краткую информацию и поля по теме, затем опубликуйте карточку.</p>
+        <p class="add-page__subtitle">Проверьте данные компонента, укажите расчётную доступность и влияние на систему, затем опубликуйте карточку.</p>
         {{else}}
-        <p class="add-page__subtitle">Укажите название, фото и видео, затем нажмите «Далее».</p>
+        <p class="add-page__subtitle">Укажите фото, видео, название, описание и тип конфигурации, затем нажмите «Далее».</p>
         {{end}}
 
         {{if .HasDraft}}
-        <div class="draft-preview">
-          <img
-            src="{{.Component.ImageURL}}"
-            alt="{{.Component.Name}}"
-            onerror="this.onerror=null;this.src='/static/img/default.jpg'"
-          >
-        </div>
-        <div class="draft-preview">
-          <video
-            src="{{.Component.VideoURL}}"
-            poster="{{.Component.ImageURL}}"
-            muted
-            loop
-            playsinline
-            controls
-            onerror="this.onerror=null;this.poster='/static/img/default.jpg';this.src='/static/img/default.mp4'"
-          ></video>
-        </div>
-
         <form class="form-card" action="/components/{{.Component.ID}}/publish" method="post">
+          <div class="draft-preview">
+            <img
+              src="{{.Component.ImageURL}}"
+              alt="{{.Component.Name}}"
+              onerror="this.onerror=null;this.src='/static/img/default.jpg'"
+            >
+          </div>
+
+          <div class="draft-preview">
+            <video
+              src="{{.Component.VideoURL}}"
+              poster="{{.Component.ImageURL}}"
+              autoplay
+              muted
+              loop
+              playsinline
+              controls
+              onerror="this.onerror=null;this.poster='/static/img/default.jpg';this.src='/static/img/default.mp4'"
+            ></video>
+          </div>
+
           <div class="form-field">
             <label class="form-field__label" for="component_name">Название компонента</label>
             <input
               class="form-field__control"
               id="component_name"
-              name="component_name"
               type="text"
               value="{{.Component.Name}}"
               readonly
@@ -65,30 +66,17 @@
           </div>
 
           <div class="form-field">
-            <label class="form-field__label" for="short_description">Краткая информация</label>
-            <textarea
-              class="form-field__control"
-              id="short_description"
-              name="short_description"
-              placeholder="Кратко опишите компонент..."
-              required
-            >{{.Component.ShortDescription}}</textarea>
-          </div>
-
-          <div class="form-field">
             <label class="form-field__label" for="description">Описание компонента</label>
             <textarea
               class="form-field__control"
               id="description"
-              name="description"
-              placeholder="Введите технические характеристики..."
-              required
+              readonly
             >{{.Component.Description}}</textarea>
           </div>
 
           <div class="form-field">
             <label class="form-field__label" for="config_type_select">Тип конфигурации</label>
-            <select class="form-field__control" id="config_type_select" name="config_type" required>
+            <select class="form-field__control" id="config_type_select" disabled>
               <option value="Single Node"{{if eq .Component.ConfigType "Single Node"}} selected{{end}}>Один узел</option>
               <option value="Replication"{{if eq .Component.ConfigType "Replication"}} selected{{end}}>Репликация</option>
               <option value="Clustering"{{if eq .Component.ConfigType "Clustering"}} selected{{end}}>Кластеризация</option>
@@ -107,7 +95,7 @@
                 min="0"
                 max="100"
                 placeholder="99.99"
-                value="{{printf "%.2f" .Component.UptimePercent}}"
+                value="{{percentValue .Component.UptimePercent}}"
                 required
               >
               <span class="form-field__suffix">%</span>
@@ -126,7 +114,7 @@
                 min="0"
                 max="100"
                 placeholder="99.99"
-                value="{{printf "%.2f" .Component.SystemImpact}}"
+                value="{{percentValue .Component.SystemImpact}}"
                 required
               >
               <span class="form-field__suffix">%</span>
@@ -135,18 +123,17 @@
 
           <div class="form-actions">
             <button class="btn btn--primary" type="submit">Опубликовать</button>
-            <a class="btn btn--secondary" href="/components">Отмена</a>
           </div>
         </form>
         {{else}}
-        <form class="form-card" action="/components" method="post">
+        <form class="form-card" action="/components" method="post" enctype="multipart/form-data">
           <label class="upload-zone" for="component_image">
             <span class="upload-zone__icon">
               <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 2v8.6l3.2-3.2a1 1 0 0 1 1.4 0L14 16l2.3-2.3a1 1 0 0 1 1.4 0L19 14.6V6H5zm3.5 2.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg>
             </span>
             <span class="upload-zone__label">Загрузить изображение компонента</span>
-            <span class="upload-zone__hint">PNG, JPG до 5 МБ. В этой лабораторной файл на сервер не передаётся.</span>
-            <input id="component_image" type="file" accept="image/png,image/jpeg">
+            <span class="upload-zone__hint">PNG, JPG до 5 МБ. Необязательно.</span>
+            <input id="component_image" name="component_image" type="file" accept="image/png,image/jpeg">
           </label>
 
           <label class="upload-zone" for="evaluation_video">
@@ -154,8 +141,8 @@
               <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 4h8l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 1.5V9h3.5L14 5.5zM8 13h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
             </span>
             <span class="upload-zone__label">Загрузить видео оценки</span>
-            <span class="upload-zone__hint">MP4, WebM до 50 МБ. В этой лабораторной файл на сервер не передаётся.</span>
-            <input id="evaluation_video" type="file" accept="video/mp4,video/webm">
+            <span class="upload-zone__hint">MP4, WebM до 50 МБ. Необязательно.</span>
+            <input id="evaluation_video" name="evaluation_video" type="file" accept="video/mp4,video/webm">
           </label>
 
           <div class="form-field">
@@ -165,14 +152,35 @@
               id="component_name"
               name="component_name"
               type="text"
+              maxlength="100"
               placeholder="например, узел веб-сервера Альфа"
               required
             >
           </div>
 
+          <div class="form-field">
+            <label class="form-field__label" for="description">Описание компонента</label>
+            <textarea
+              class="form-field__control"
+              id="description"
+              name="description"
+              maxlength="1000"
+              placeholder="Введите технические характеристики..."
+              required
+            ></textarea>
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="config_type_select">Тип конфигурации</label>
+            <select class="form-field__control" id="config_type_select" name="config_type" required>
+              <option value="Single Node">Один узел</option>
+              <option value="Replication">Репликация</option>
+              <option value="Clustering">Кластеризация</option>
+            </select>
+          </div>
+
           <div class="form-actions">
             <button class="btn btn--primary" type="submit">Далее</button>
-            <a class="btn btn--secondary" href="/components">Отмена</a>
           </div>
         </form>
         {{end}}
@@ -181,5 +189,15 @@
 
     {{template "tab_bar" .}}
   </div>
+  <script>
+    document.querySelectorAll("video[poster]").forEach((video) => {
+      const fallback = "/static/img/default.jpg";
+      const probe = new Image();
+      probe.onerror = () => {
+        video.poster = fallback;
+      };
+      probe.src = video.poster;
+    });
+  </script>
 </body>
 </html>

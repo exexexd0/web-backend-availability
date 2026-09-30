@@ -25,6 +25,17 @@ func main() {
 	}
 
 	if err := db.Exec(`
+		ALTER TABLE components
+			DROP COLUMN IF EXISTS short_description,
+			ALTER COLUMN uptime_percent DROP NOT NULL,
+			ALTER COLUMN uptime_percent DROP DEFAULT,
+			ALTER COLUMN system_impact DROP NOT NULL,
+			ALTER COLUMN system_impact DROP DEFAULT
+	`).Error; err != nil {
+		panic("cant update components columns")
+	}
+
+	if err := db.Exec(`
 		CREATE UNIQUE INDEX IF NOT EXISTS idx_components_one_draft_per_user
 		ON components (creator_id)
 		WHERE status = 'draft'

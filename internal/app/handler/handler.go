@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -8,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/one-compressive/web-backend-availability/internal/app/ds"
 	"github.com/one-compressive/web-backend-availability/internal/app/repository"
+	"github.com/one-compressive/web-backend-availability/internal/app/storage"
 )
 
 const (
@@ -18,14 +21,17 @@ const (
 
 	defaultImageURL = "/static/img/default.jpg"
 	defaultVideoURL = "/static/img/default.mp4"
+
+	descriptionPreviewLength = 30
 )
 
 type Handler struct {
 	Repository *repository.Repository
+	Storage    *storage.MediaStorage
 }
 
-func NewHandler(r *repository.Repository) *Handler {
-	return &Handler{Repository: r}
+func NewHandler(r *repository.Repository, s *storage.MediaStorage) *Handler {
+	return &Handler{Repository: r, Storage: s}
 }
 
 func (h *Handler) RegisterHandler(router *gin.Engine) {
@@ -38,6 +44,9 @@ func (h *Handler) RegisterHandler(router *gin.Engine) {
 }
 
 func (h *Handler) RegisterStatic(router *gin.Engine) {
+	router.SetFuncMap(template.FuncMap{
+		"percentValue": percentValue,
+	})
 	router.LoadHTMLGlob("./templates/*")
 	router.Static("/static", "./static")
 }
@@ -52,6 +61,21 @@ func resolveMedia(imageURL, videoURL string) (string, string) {
 	return imageURL, videoURL
 }
 
+func truncateText(text string, limit int) (string, bool) {
+	runes := []rune(text)
+	if len(runes) <= limit {
+		return text, false
+	}
+	return string(runes[:limit]), true
+}
+
+func percentValue(value *float32) string {
+	if value == nil {
+		return ""
+	}
+	return fmt.Sprintf("%.2f", *value)
+}
+
 func (h *Handler) feedURL() string {
 	id, err := h.Repository.GetFirstPublishedID()
 	if err != nil || id == 0 {
@@ -64,7 +88,7 @@ type componentCard struct {
 	ID            uint
 	Name          string
 	ImageURL      string
-	UptimePercent float32
+	UptimePercent *float32
 	LikesCount    int64
 }
 

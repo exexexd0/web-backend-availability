@@ -64,8 +64,23 @@ func (r *Repository) GetFirstPublishedID() (uint, error) {
 	return component.ID, nil
 }
 
-func (r *Repository) CreateDraft(name string, creatorID uint) (*ds.Component, error) {
-	existing, err := r.GetDraftByCreator(creatorID)
+func (r *Repository) GetNextComponent(currentID int) (*ds.Component, error) {
+	var component ds.Component
+	err := r.db.Where("status = ? AND id > ?", ds.StatusPublished, currentID).Order("id ASC").First(&component).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = r.db.Where("status = ?", ds.StatusPublished).Order("id ASC").First(&component).Error
+	}
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &component, nil
+}
+
+func (r *Repository) CreateDraft(draft ds.Component) (*ds.Component, error) {
+	existing, err := r.GetDraftByCreator(draft.CreatorID)
 	if err != nil {
 		return nil, err
 	}
@@ -73,30 +88,23 @@ func (r *Repository) CreateDraft(name string, creatorID uint) (*ds.Component, er
 		return existing, nil
 	}
 
-	component := ds.Component{
-		Name:      name,
-		Status:    ds.StatusDraft,
-		CreatorID: creatorID,
-		CreatedAt: time.Now(),
-	}
-	if err := r.db.Create(&component).Error; err != nil {
+	draft.Status = ds.StatusDraft
+	draft.CreatedAt = time.Now()
+	if err := r.db.Create(&draft).Error; err != nil {
 		return nil, err
 	}
-	return &component, nil
+	return &draft, nil
 }
 
-func (r *Repository) PublishComponent(id uint, shortDescription, description string, configType ds.ConfigType, uptimePercent, systemImpact float32) error {
+func (r *Repository) PublishComponent(id uint, uptimePercent, systemImpact float32) error {
 	now := time.Now()
 	result := r.db.Model(&ds.Component{}).
 		Where("id = ? AND status = ?", id, ds.StatusDraft).
 		Updates(map[string]interface{}{
-			"short_description": shortDescription,
-			"description":       description,
-			"config_type":       configType,
-			"uptime_percent":    uptimePercent,
-			"system_impact":     systemImpact,
-			"status":            ds.StatusPublished,
-			"formed_at":         now,
+			"uptime_percent": uptimePercent,
+			"system_impact":  systemImpact,
+			"status":         ds.StatusPublished,
+			"formed_at":      now,
 		})
 	if result.Error != nil {
 		return result.Error
@@ -109,13 +117,19 @@ func (r *Repository) PublishComponent(id uint, shortDescription, description str
 
 func (r *Repository) DeleteComponent(id uint) error {
 	query := "UPDATE components SET status = $1 WHERE id = $2 AND status <> $1 RETURNING id"
-	row := r.db.Raw(query, ds.StatusDeleted, id).Row()
+
+	sqlDB, err := r.db.DB()
+	if err != nil {
+		return err
+	}
+
 	var updatedID uint
-	if err := row.Scan(&updatedID); err != nil {
+	if err := sqlDB.QueryRow(query, ds.StatusDeleted, id).Scan(&updatedID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("компонент не найден")
 		}
 		return err
 	}
+
 	return nil
 }

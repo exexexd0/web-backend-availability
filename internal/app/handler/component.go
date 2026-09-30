@@ -1,15 +1,20 @@
 package handler
 
 import (
+	"errors"
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"github.com/one-compressive/web-backend-availability/internal/app/ds"
 	"github.com/one-compressive/web-backend-availability/internal/app/repository"
 	"github.com/sirupsen/logrus"
 )
+
+const maxCreateRequestSize = 60 << 20
 
 func (h *Handler) GetComponents(ctx *gin.Context) {
 	uptimeFilterStr := ctx.Query("uptime_percent")
@@ -68,31 +73,22 @@ func (h *Handler) GetComponent(ctx *gin.Context) {
 		return
 	}
 	if component == nil {
-		ctx.String(statusNotFound, "Удалённую услугу просматривать нельзя")
+		ctx.Redirect(http.StatusFound, "/components")
 		return
 	}
 
-	wantNext := ctx.Query("next") == "true"
-	if wantNext {
-		published, listErr := h.Repository.GetPublishedComponents(nil)
-		if listErr != nil {
-			logrus.Error(listErr)
-			ctx.String(statusInternalServerError, "Не удалось загрузить компоненты")
+	if ctx.Query("next") == "true" {
+		next, nextErr := h.Repository.GetNextComponent(int(component.ID))
+		if nextErr != nil {
+			logrus.Error(nextErr)
+			ctx.String(statusInternalServerError, "Не удалось загрузить следующий компонент")
 			return
 		}
-		if len(published) == 0 {
+		if next == nil {
 			ctx.String(statusNotFound, "Опубликованные компоненты не найдены")
 			return
 		}
-		idx := 0
-		for i, item := range published {
-			if item.ID == component.ID {
-				idx = i
-				break
-			}
-		}
-		next := published[(idx+1)%len(published)]
-		component = &next
+		component = next
 	}
 
 	likesCount, likesErr := h.Repository.CountLikes(component.ID)
@@ -103,9 +99,12 @@ func (h *Handler) GetComponent(ctx *gin.Context) {
 	}
 
 	view := withResolvedMedia(*component)
+	preview, truncated := truncateText(view.Description, descriptionPreviewLength)
 	ctx.HTML(statusOK, "component_feed.html", pageData("feed", "/component/"+strconv.FormatUint(uint64(view.ID), 10), gin.H{
-		"Component":  view,
-		"LikesCount": likesCount,
+		"Component":            view,
+		"LikesCount":           likesCount,
+		"DescriptionPreview":   preview,
+		"DescriptionTruncated": truncated,
 	}))
 }
 
@@ -130,13 +129,52 @@ func (h *Handler) GetAddComponent(ctx *gin.Context) {
 }
 
 func (h *Handler) CreateComponent(ctx *gin.Context) {
-	name := ctx.PostForm("component_name")
-	if name == "" {
-		ctx.String(statusBadRequest, "Укажите название компонента")
+	ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, maxCreateRequestSize)
+
+	name := strings.TrimSpace(ctx.PostForm("component_name"))
+	description := strings.TrimSpace(ctx.PostForm("description"))
+	configType := ds.ConfigType(ctx.PostForm("config_type"))
+	if name == "" || description == "" || configType == "" {
+		ctx.String(statusBadRequest, "Заполните название, описание и тип конфигурации")
+		return
+	}
+	if utf8.RuneCountInString(name) > 100 || utf8.RuneCountInString(description) > 1000 {
+		ctx.String(statusBadRequest, "Название не длиннее 100 символов, описание не длиннее 1000 символов")
+		return
+	}
+	if !configType.IsValid() {
+		ctx.String(statusBadRequest, "Некорректный тип конфигурации")
 		return
 	}
 
-	_, err := h.Repository.CreateDraft(name, repository.DefaultCreatorID)
+	draft, err := h.Repository.GetDraftByCreator(repository.DefaultCreatorID)
+	if err != nil {
+		logrus.Error(err)
+		ctx.String(statusInternalServerError, "Не удалось загрузить черновик")
+		return
+	}
+	if draft != nil {
+		ctx.Redirect(http.StatusFound, "/add_component")
+		return
+	}
+
+	imageURL, ok := h.uploadFormFile(ctx, "component_image", "images", 5<<20, map[string]string{"image/png": ".png", "image/jpeg": ".jpg"})
+	if !ok {
+		return
+	}
+	videoURL, ok := h.uploadFormFile(ctx, "evaluation_video", "videos", 50<<20, map[string]string{"video/mp4": ".mp4", "video/webm": ".webm"})
+	if !ok {
+		return
+	}
+
+	_, err = h.Repository.CreateDraft(ds.Component{
+		Name:        name,
+		Description: description,
+		ConfigType:  configType,
+		ImageURL:    imageURL,
+		VideoURL:    videoURL,
+		CreatorID:   repository.DefaultCreatorID,
+	})
 	if err != nil {
 		logrus.Error(err)
 		ctx.String(statusInternalServerError, "Не удалось создать черновик")
@@ -146,6 +184,47 @@ func (h *Handler) CreateComponent(ctx *gin.Context) {
 	ctx.Redirect(http.StatusFound, "/add_component")
 }
 
+func (h *Handler) uploadFormFile(ctx *gin.Context, field, folder string, maxSize int64, types map[string]string) (string, bool) {
+	file, err := ctx.FormFile(field)
+	if errors.Is(err, http.ErrMissingFile) {
+		return "", true
+	}
+	if err != nil {
+		logrus.Error(err)
+		ctx.String(statusBadRequest, "Не удалось прочитать загруженный файл")
+		return "", false
+	}
+	if file.Size > maxSize {
+		ctx.String(statusBadRequest, "Файл "+file.Filename+" слишком большой")
+		return "", false
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		logrus.Error(err)
+		ctx.String(statusBadRequest, "Не удалось прочитать загруженный файл")
+		return "", false
+	}
+	head := make([]byte, 512)
+	n, _ := src.Read(head)
+	src.Close()
+
+	contentType := http.DetectContentType(head[:n])
+	ext, allowed := types[contentType]
+	if !allowed {
+		ctx.String(statusBadRequest, "Неподдерживаемый формат файла "+file.Filename)
+		return "", false
+	}
+
+	url, err := h.Storage.Upload(ctx.Request.Context(), file, folder, contentType, ext)
+	if err != nil {
+		logrus.Error(err)
+		ctx.String(statusInternalServerError, "Не удалось загрузить файл в хранилище")
+		return "", false
+	}
+	return url, true
+}
+
 func (h *Handler) PublishComponent(ctx *gin.Context) {
 	id, err := parseID(ctx.Param("id"))
 	if err != nil {
@@ -153,13 +232,10 @@ func (h *Handler) PublishComponent(ctx *gin.Context) {
 		return
 	}
 
-	shortDescription := ctx.PostForm("short_description")
-	description := ctx.PostForm("description")
-	configType := ds.ConfigType(ctx.PostForm("config_type"))
 	uptimeStr := ctx.PostForm("uptime_percent")
 	impactStr := ctx.PostForm("system_impact_percent")
-	if shortDescription == "" || description == "" || configType == "" || uptimeStr == "" || impactStr == "" {
-		ctx.String(statusBadRequest, "Заполните краткую информацию, описание, тип конфигурации, доступность и влияние на систему")
+	if uptimeStr == "" || impactStr == "" {
+		ctx.String(statusBadRequest, "Заполните расчётную доступность и влияние на систему")
 		return
 	}
 
@@ -174,7 +250,7 @@ func (h *Handler) PublishComponent(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.Repository.PublishComponent(id, shortDescription, description, configType, float32(uptime), float32(impact)); err != nil {
+	if err := h.Repository.PublishComponent(id, float32(uptime), float32(impact)); err != nil {
 		logrus.Error(err)
 		ctx.String(statusInternalServerError, "Не удалось опубликовать компонент")
 		return

@@ -20,6 +20,16 @@
           playsinline
           onerror="this.onerror=null;this.poster='/static/img/default.jpg';this.src='/static/img/default.mp4'"
         ></video>
+        <script>
+          document.querySelectorAll("video[poster]").forEach((video) => {
+            const fallback = "/static/img/default.jpg";
+            const probe = new Image();
+            probe.onerror = () => {
+              video.poster = fallback;
+            };
+            probe.src = video.poster;
+          });
+        </script>
         <div class="feed__scrim" aria-hidden="true"></div>
 
         <header class="feed__top">
@@ -36,11 +46,11 @@
         <aside class="feed__actions" aria-label="Параметры и действия компонента">
           <div class="feed__metric">
             <span class="feed__metric-label">Доступность</span>
-            <strong class="feed__metric-value">{{printf "%.2f" .Component.UptimePercent}}%</strong>
+            <strong class="feed__metric-value">{{with percentValue .Component.UptimePercent}}{{.}}%{{else}}—{{end}}</strong>
           </div>
           <div class="feed__metric">
             <span class="feed__metric-label">Влияние на систему</span>
-            <strong class="feed__metric-value">{{printf "%.2f" .Component.SystemImpact}}%</strong>
+            <strong class="feed__metric-value">{{with percentValue .Component.SystemImpact}}{{.}}%{{else}}—{{end}}</strong>
           </div>
           <button
             class="feed__action feed__action--like"
@@ -65,12 +75,13 @@
         <div class="feed__body">
           <h1 class="feed__title">{{.Component.Name}}</h1>
           <div class="feed__description">
+            {{if .DescriptionTruncated}}
             <input
               class="feed__description-toggle"
               id="description-toggle-{{.Component.ID}}"
               type="checkbox"
             >
-            <p class="feed__description-short">{{.Component.ShortDescription}}</p>
+            <p class="feed__description-short">{{.DescriptionPreview}}…</p>
             <label
               class="feed__more feed__description-more"
               for="description-toggle-{{.Component.ID}}"
@@ -82,6 +93,9 @@
                 for="description-toggle-{{.Component.ID}}"
               >СВЕРНУТЬ</label>
             </div>
+            {{else}}
+            <p>{{.Component.Description}}</p>
+            {{end}}
           </div>
         </div>
       </article>
