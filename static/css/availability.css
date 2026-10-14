@@ -925,3 +925,21 @@ textarea.form-field__control {
   max-height: 180px;
   object-fit: cover;
 }
+
+.media-pick {
+  display: block;
+  cursor: pointer;
+}
+
+.media-pick:hover {
+  border-color: var(--me-green);
+}
+
+.media-pick img,
+.media-pick video {
+  pointer-events: none;
+}
+
+.media-pick__input {
+  display: none;
+}

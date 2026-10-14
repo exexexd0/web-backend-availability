@@ -43,6 +43,19 @@ func NewFromEnv() (*MediaStorage, error) {
 }
 
 func (s *MediaStorage) Upload(ctx context.Context, file *multipart.FileHeader, folder, contentType, ext string) (string, error) {
+	objectName, err := s.UploadObjectName(ctx, file, folder, contentType, ext)
+	if err != nil {
+		return "", err
+	}
+	return s.PublicObjectURL(objectName), nil
+}
+
+func (s *MediaStorage) PublicObjectURL(objectName string) string {
+	return s.publicURL + "/" + s.bucket + "/" + strings.TrimPrefix(objectName, "/")
+}
+
+// UploadObjectName сохраняет файл в MinIO и возвращает латинское имя объекта, без публичного URL.
+func (s *MediaStorage) UploadObjectName(ctx context.Context, file *multipart.FileHeader, folder, contentType, ext string) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", err
@@ -62,7 +75,7 @@ func (s *MediaStorage) Upload(ctx context.Context, file *multipart.FileHeader, f
 		return "", err
 	}
 
-	return s.publicURL + "/" + s.bucket + "/" + objectName, nil
+	return objectName, nil
 }
 
 func randomName() (string, error) {

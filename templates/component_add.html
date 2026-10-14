@@ -127,22 +127,26 @@
         </form>
         {{else}}
         <form class="form-card" action="/components" method="post" enctype="multipart/form-data">
-          <label class="upload-zone" for="component_image">
-            <span class="upload-zone__icon">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm0 2v8.6l3.2-3.2a1 1 0 0 1 1.4 0L14 16l2.3-2.3a1 1 0 0 1 1.4 0L19 14.6V6H5zm3.5 2.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/></svg>
-            </span>
-            <span class="upload-zone__label">Загрузить изображение компонента</span>
-            <span class="upload-zone__hint">PNG, JPG до 5 МБ. Необязательно.</span>
-            <input id="component_image" name="component_image" type="file" accept="image/png,image/jpeg">
+          <label class="draft-preview media-pick" title="Нажмите, чтобы выбрать своё изображение">
+            <img
+              id="component_image_preview"
+              src="/static/img/default.jpg"
+              alt="Изображение компонента"
+            >
+            <input id="component_image" class="media-pick__input" name="component_image" type="file" accept="image/png,image/jpeg">
           </label>
 
-          <label class="upload-zone" for="evaluation_video">
-            <span class="upload-zone__icon">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 4h8l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 1.5V9h3.5L14 5.5zM8 13h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
-            </span>
-            <span class="upload-zone__label">Загрузить видео оценки</span>
-            <span class="upload-zone__hint">MP4, WebM до 50 МБ. Необязательно.</span>
-            <input id="evaluation_video" name="evaluation_video" type="file" accept="video/mp4,video/webm">
+          <label class="draft-preview media-pick" title="Нажмите, чтобы выбрать своё видео">
+            <video
+              id="evaluation_video_preview"
+              src="/static/img/default.mp4"
+              poster="/static/img/default.jpg"
+              autoplay
+              muted
+              loop
+              playsinline
+            ></video>
+            <input id="evaluation_video" class="media-pick__input" name="evaluation_video" type="file" accept="video/mp4,video/webm">
           </label>
 
           <div class="form-field">
@@ -198,6 +202,26 @@
       };
       probe.src = video.poster;
     });
+
+    function bindMediaPick(inputId, previewId) {
+      const input = document.getElementById(inputId);
+      const preview = document.getElementById(previewId);
+      if (!input || !preview) return;
+      let objectUrl = "";
+      input.addEventListener("change", () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        objectUrl = URL.createObjectURL(file);
+        preview.src = objectUrl;
+        if (preview.tagName === "VIDEO") {
+          preview.play().catch(() => {});
+        }
+      });
+    }
+
+    bindMediaPick("component_image", "component_image_preview");
+    bindMediaPick("evaluation_video", "evaluation_video_preview");
   </script>
 </body>
 </html>

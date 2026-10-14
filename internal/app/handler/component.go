@@ -43,7 +43,7 @@ func (h *Handler) GetComponents(ctx *gin.Context) {
 			ctx.String(statusInternalServerError, "Не удалось загрузить лайки")
 			return
 		}
-		imageURL, _ := resolveMedia(component.ImageURL, component.VideoURL)
+		imageURL, _ := h.resolveMedia(component.ImageURL, component.VideoURL)
 		cards = append(cards, componentCard{
 			ID:            component.ID,
 			Name:          component.Name,
@@ -98,7 +98,7 @@ func (h *Handler) GetComponent(ctx *gin.Context) {
 		return
 	}
 
-	view := withResolvedMedia(*component)
+	view := h.withResolvedMedia(*component)
 	preview, truncated := truncateText(view.Description, descriptionPreviewLength)
 	ctx.HTML(statusOK, "component_feed.html", pageData("feed", "/component/"+strconv.FormatUint(uint64(view.ID), 10), gin.H{
 		"Component":            view,
@@ -118,7 +118,7 @@ func (h *Handler) GetAddComponent(ctx *gin.Context) {
 
 	var view *ds.Component
 	if draft != nil {
-		resolved := withResolvedMedia(*draft)
+		resolved := h.withResolvedMedia(*draft)
 		view = &resolved
 	}
 
@@ -209,7 +209,7 @@ func (h *Handler) uploadFormFile(ctx *gin.Context, field, folder string, maxSize
 	n, _ := src.Read(head)
 	src.Close()
 
-	contentType := http.DetectContentType(head[:n])
+	contentType := sniffContentType(head[:n])
 	ext, allowed := types[contentType]
 	if !allowed {
 		ctx.String(statusBadRequest, "Неподдерживаемый формат файла "+file.Filename)
