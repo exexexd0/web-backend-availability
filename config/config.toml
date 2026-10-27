@@ -1,2 +1,12 @@
 ServiceHost = "0.0.0.0"
 ServicePort = 8081
+
+[JWT]
+Token = "test"
+ExpiresIn = "1h"
+Issuer = "availability"
+
+[Redis]
+DialTimeout = "10s"
+ReadTimeout = "10s"
+

@@ -1,0 +1,651 @@
+basePath: /
+definitions:
+  github_com_one-compressive_web-backend-availability_internal_app_ds.ComponentDetailSerializer:
+    properties:
+      config_type:
+        $ref: '#/definitions/github_com_one-compressive_web-backend-availability_internal_app_ds.ConfigType'
+      created_at:
+        type: string
+      description:
+        type: string
+      formed_at:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      likes_count:
+        type: integer
+      name:
+        type: string
+      system_impact:
+        type: number
+      uptime_percent:
+        type: number
+      video_url:
+        type: string
+    type: object
+  github_com_one-compressive_web-backend-availability_internal_app_ds.ComponentFeedSerializer:
+    properties:
+      config_type:
+        $ref: '#/definitions/github_com_one-compressive_web-backend-availability_internal_app_ds.ConfigType'
+      created_at:
+        type: string
+      description:
+        type: string
+      formed_at:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      is_liked:
+        type: integer
+      likes_count:
+        type: integer
+      name:
+        type: string
+      system_impact:
+        type: number
+      uptime_percent:
+        type: number
+      video_url:
+        type: string
+    type: object
+  github_com_one-compressive_web-backend-availability_internal_app_ds.ComponentListSerializer:
+    properties:
+      config_type:
+        $ref: '#/definitions/github_com_one-compressive_web-backend-availability_internal_app_ds.ConfigType'
+      description:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      is_owner:
+        type: integer
+      likes_count:
+        type: integer
+      name:
+        type: string
+      system_impact:
+        type: number
+      uptime_percent:
+        type: number
+      video_url:
+        type: string
+    type: object
+  github_com_one-compressive_web-backend-availability_internal_app_ds.ConfigType:
+    enum:
+    - Single Node
+    - Clustering
+    - Replication
+    type: string
+    x-enum-varnames:
+    - ConfigTypeSingle
+    - ConfigTypeClustering
+    - ConfigTypeReplication
+  github_com_one-compressive_web-backend-availability_internal_app_ds.User:
+    properties:
+      id:
+        type: integer
+      is_moderator:
+        type: boolean
+      login:
+        type: string
+    type: object
+  internal_app_handler.componentDetailResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_one-compressive_web-backend-availability_internal_app_ds.ComponentDetailSerializer'
+      status:
+        type: string
+    type: object
+  internal_app_handler.componentFeedResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_one-compressive_web-backend-availability_internal_app_ds.ComponentFeedSerializer'
+      status:
+        type: string
+    type: object
+  internal_app_handler.componentListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/github_com_one-compressive_web-backend-availability_internal_app_ds.ComponentListSerializer'
+        type: array
+      status:
+        type: string
+    type: object
+  internal_app_handler.credentialsRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  internal_app_handler.deleteData:
+    properties:
+      id:
+        type: integer
+    type: object
+  internal_app_handler.deleteResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_app_handler.deleteData'
+      status:
+        type: string
+    type: object
+  internal_app_handler.errorResponse:
+    properties:
+      message:
+        type: string
+      status:
+        example: fail
+        type: string
+    type: object
+  internal_app_handler.likeData:
+    properties:
+      component_id:
+        type: integer
+      value:
+        type: integer
+    type: object
+  internal_app_handler.likeRequest:
+    properties:
+      value:
+        type: integer
+    type: object
+  internal_app_handler.likeResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_app_handler.likeData'
+      status:
+        type: string
+    type: object
+  internal_app_handler.loginData:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      token_type:
+        type: string
+    type: object
+  internal_app_handler.loginResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_app_handler.loginData'
+      status:
+        type: string
+    type: object
+  internal_app_handler.messageResponse:
+    properties:
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+  internal_app_handler.publishRequest:
+    properties:
+      system_impact:
+        type: number
+      uptime_percent:
+        type: number
+    type: object
+  internal_app_handler.userResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_one-compressive_web-backend-availability_internal_app_ds.User'
+      status:
+        type: string
+    type: object
+host: localhost:8081
+info:
+  contact:
+    name: API Support
+  description: 'Веб-сервис компонентов отказоустойчивой системы. Чтение списка и ленты
+    доступно без токена. Методы создателя требуют заголовок Authorization: Bearer
+    {access_token}.'
+  license:
+    name: AS IS (NO WARRANTY)
+  title: Оценка отказоустойчивости системы
+  version: "1.0"
+paths:
+  /api/components:
+    get:
+      description: Доступен без авторизации. uptime_percent — необязательный фильтр
+        минимальной доступности от 0 до 100. is_owner равен 1, если создатель совпадает
+        с пользователем из JWT, иначе 0.
+      parameters:
+      - description: Минимальная расчётная доступность
+        in: query
+        name: uptime_percent
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_app_handler.componentListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+      summary: Список опубликованных услуг
+      tags:
+      - Услуги
+    post:
+      consumes:
+      - multipart/form-data
+      description: Только для авторизованного создателя. Создаёт черновик и подставляет
+        creator_id из JWT, а не из запроса. Файлы image и video необязательны. Второй
+        черновик того же пользователя — 400.
+      parameters:
+      - description: Название
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: Описание
+        in: formData
+        name: description
+        required: true
+        type: string
+      - description: Тип конфигурации
+        enum:
+        - Single Node
+        - Clustering
+        - Replication
+        in: formData
+        name: config_type
+        required: true
+        type: string
+      - description: Изображение
+        in: formData
+        name: image
+        type: file
+      - description: Видео
+        in: formData
+        name: video
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_app_handler.componentDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Добавление услуги
+      tags:
+      - Услуги
+  /api/components/{id}:
+    delete:
+      description: 'Только для авторизованного создателя. Мягкое удаление своей услуги:
+        статус становится deleted.'
+      parameters:
+      - description: Идентификатор услуги
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_app_handler.deleteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удаление услуги
+      tags:
+      - Услуги
+    put:
+      consumes:
+      - application/json
+      description: Только для авторизованного создателя. Переводит свой черновик в
+        published и записывает uptime_percent, system_impact и formed_at.
+      parameters:
+      - description: Идентификатор услуги
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Расчётная доступность и влияние на систему
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_app_handler.publishRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_app_handler.componentDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Публикация услуги
+      tags:
+      - Услуги
+  /api/components/{id}/like:
+    post:
+      consumes:
+      - application/json
+      description: Только для авторизованного пользователя. value=1 ставит лайк текущего
+        пользователя, value=0 снимает. Повтор идемпотентен.
+      parameters:
+      - description: Идентификатор услуги
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 1 — поставить, 0 — снять
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_app_handler.likeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_app_handler.likeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Лайк услуги
+      tags:
+      - Услуги
+  /api/components/draft:
+    get:
+      description: Только для авторизованного создателя. Идентификатора в пути нет,
+        черновик не больше одного.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_app_handler.componentDetailResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Черновик текущего пользователя
+      tags:
+      - Услуги
+  /api/components/feed:
+    get:
+      description: Доступна без авторизации. Возвращает первую опубликованную услугу.
+        is_liked равен 1, если пользователь из JWT лайкнул услугу, иначе 0.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_app_handler.componentFeedResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+      summary: Первая услуга ленты
+      tags:
+      - Услуги
+  /api/components/feed/{id}:
+    get:
+      description: Доступна без авторизации. Без next возвращает опубликованную услугу
+        с этим id. При next=true возвращает следующую опубликованную, после последней
+        — снова первую.
+      parameters:
+      - description: Идентификатор услуги
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Следующая опубликованная услуга
+        in: query
+        name: next
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_app_handler.componentFeedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+      summary: Услуга ленты по идентификатору
+      tags:
+      - Услуги
+  /api/users:
+    post:
+      consumes:
+      - application/json
+      description: Создаёт пользователя. Поле is_moderator с клиента не принимается
+        и всегда false. Пароль сохраняется как bcrypt-хеш и в ответ не входит.
+      parameters:
+      - description: Логин и пароль
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_app_handler.credentialsRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_app_handler.userResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+      summary: Регистрация пользователя
+      tags:
+      - Пользователи
+  /api/users/login:
+    post:
+      consumes:
+      - application/json
+      description: 'Проверяет логин и пароль и возвращает JWT. Дальше токен передаётся
+        в заголовке Authorization: Bearer {access_token}.'
+      parameters:
+      - description: Логин и пароль
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_app_handler.credentialsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_app_handler.loginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+      summary: Аутентификация
+      tags:
+      - Пользователи
+  /api/users/logout:
+    post:
+      description: Помещает текущий JWT в чёрный список Redis до истечения срока токена.
+        Повторное использование этого токена даёт 403.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_app_handler.messageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_app_handler.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Деавторизация
+      tags:
+      - Пользователи
+schemes:
+- http
+securityDefinitions:
+  BearerAuth:
+    description: 'Введите значение целиком: Bearer {access_token}'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

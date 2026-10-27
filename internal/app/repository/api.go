@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/one-compressive/web-backend-availability/internal/app/auth"
 	"github.com/one-compressive/web-backend-availability/internal/app/ds"
 	"gorm.io/gorm"
 )
@@ -133,10 +134,38 @@ func (r *Repository) SetComponentLike(userID, componentID uint, value int) error
 	return r.db.Where("user_id = ? AND component_id = ?", userID, componentID).FirstOrCreate(&like).Error
 }
 
+func (r *Repository) GetUserByLogin(login string) (*ds.User, error) {
+	var user ds.User
+	err := r.db.Where("login = ?", login).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *Repository) GetUserByID(id uint) (*ds.User, error) {
+	var user ds.User
+	err := r.db.First(&user, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (r *Repository) RegisterUser(login, password string) (*ds.User, error) {
+	hash, err := auth.HashPassword(password)
+	if err != nil {
+		return nil, err
+	}
 	user := ds.User{
 		Login:       login,
-		Password:    password,
+		Password:    hash,
 		IsModerator: false,
 	}
 	if err := r.db.Create(&user).Error; err != nil {

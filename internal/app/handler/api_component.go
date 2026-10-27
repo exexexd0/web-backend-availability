@@ -30,18 +30,44 @@ var systemFormFields = []string{
 }
 
 func (h *Handler) currentUser(ctx *gin.Context) (*ds.User, bool) {
-	user, err := h.Repository.CurrentUser()
-	if err != nil {
-		h.errorHandler(ctx, statusInternalServerError, err)
+	value, ok := ctx.Get(userContextKey)
+	if !ok || value == nil {
+		h.errorHandler(ctx, http.StatusUnauthorized, errUnauthorized)
+		return nil, false
+	}
+	user, ok := value.(*ds.User)
+	if !ok || user == nil {
+		h.errorHandler(ctx, http.StatusUnauthorized, errUnauthorized)
 		return nil, false
 	}
 	return user, true
 }
 
+func (h *Handler) optionalUser(ctx *gin.Context) *ds.User {
+	value, ok := ctx.Get(userContextKey)
+	if !ok || value == nil {
+		return nil
+	}
+	user, _ := value.(*ds.User)
+	return user
+}
+
+// GetComponentsAPI godoc
+// @Summary      Список опубликованных услуг
+// @Description  Доступен без авторизации. uptime_percent — необязательный фильтр минимальной доступности от 0 до 100. is_owner равен 1, если создатель совпадает с пользователем из JWT, иначе 0.
+// @Tags         Услуги
+// @Produce      json
+// @Param        uptime_percent query number false "Минимальная расчётная доступность"
+// @Success      200 {object} componentListResponse
+// @Failure      400 {object} errorResponse
+// @Failure      401 {object} errorResponse
+// @Failure      500 {object} errorResponse
+// @Router       /api/components [get]
 func (h *Handler) GetComponentsAPI(ctx *gin.Context) {
-	user, ok := h.currentUser(ctx)
-	if !ok {
-		return
+	user := h.optionalUser(ctx)
+	var userID uint
+	if user != nil {
+		userID = user.ID
 	}
 
 	uptimeFilterStr := ctx.Query("uptime_percent")
@@ -68,7 +94,7 @@ func (h *Handler) GetComponentsAPI(ctx *gin.Context) {
 			h.errorHandler(ctx, statusInternalServerError, fmt.Errorf("не удалось загрузить лайки"))
 			return
 		}
-		items = append(items, newListItem(component, likesCount, user.ID))
+		items = append(items, newListItem(component, likesCount, userID))
 	}
 
 	ctx.JSON(statusOK, gin.H{
@@ -77,10 +103,21 @@ func (h *Handler) GetComponentsAPI(ctx *gin.Context) {
 	})
 }
 
+// GetFeedAPI godoc
+// @Summary      Первая услуга ленты
+// @Description  Доступна без авторизации. Возвращает первую опубликованную услугу. is_liked равен 1, если пользователь из JWT лайкнул услугу, иначе 0.
+// @Tags         Услуги
+// @Produce      json
+// @Success      200 {object} componentFeedResponse
+// @Failure      401 {object} errorResponse
+// @Failure      404 {object} errorResponse
+// @Failure      500 {object} errorResponse
+// @Router       /api/components/feed [get]
 func (h *Handler) GetFeedAPI(ctx *gin.Context) {
-	user, ok := h.currentUser(ctx)
-	if !ok {
-		return
+	user := h.optionalUser(ctx)
+	var userID uint
+	if user != nil {
+		userID = user.ID
 	}
 
 	component, err := h.Repository.GetFirstPublishedComponent()
@@ -93,13 +130,27 @@ func (h *Handler) GetFeedAPI(ctx *gin.Context) {
 		return
 	}
 
-	h.writeFeed(ctx, component, user.ID)
+	h.writeFeed(ctx, component, userID)
 }
 
+// GetFeedByIDAPI godoc
+// @Summary      Услуга ленты по идентификатору
+// @Description  Доступна без авторизации. Без next возвращает опубликованную услугу с этим id. При next=true возвращает следующую опубликованную, после последней — снова первую.
+// @Tags         Услуги
+// @Produce      json
+// @Param        id path int true "Идентификатор услуги"
+// @Param        next query bool false "Следующая опубликованная услуга"
+// @Success      200 {object} componentFeedResponse
+// @Failure      400 {object} errorResponse
+// @Failure      401 {object} errorResponse
+// @Failure      404 {object} errorResponse
+// @Failure      500 {object} errorResponse
+// @Router       /api/components/feed/{id} [get]
 func (h *Handler) GetFeedByIDAPI(ctx *gin.Context) {
-	user, ok := h.currentUser(ctx)
-	if !ok {
-		return
+	user := h.optionalUser(ctx)
+	var userID uint
+	if user != nil {
+		userID = user.ID
 	}
 
 	id, err := parseID(ctx.Param("id"))
@@ -136,9 +187,21 @@ func (h *Handler) GetFeedByIDAPI(ctx *gin.Context) {
 		return
 	}
 
-	h.writeFeed(ctx, component, user.ID)
+	h.writeFeed(ctx, component, userID)
 }
 
+// GetDraftAPI godoc
+// @Summary      Черновик текущего пользователя
+// @Description  Только для авторизованного создателя. Идентификатора в пути нет, черновик не больше одного.
+// @Tags         Услуги
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} componentDetailResponse
+// @Failure      401 {object} errorResponse
+// @Failure      403 {object} errorResponse
+// @Failure      404 {object} errorResponse
+// @Failure      500 {object} errorResponse
+// @Router       /api/components/draft [get]
 func (h *Handler) GetDraftAPI(ctx *gin.Context) {
 	user, ok := h.currentUser(ctx)
 	if !ok {
@@ -158,6 +221,24 @@ func (h *Handler) GetDraftAPI(ctx *gin.Context) {
 	h.writeComponentDetail(ctx, draft)
 }
 
+// AddComponentAPI godoc
+// @Summary      Добавление услуги
+// @Description  Только для авторизованного создателя. Создаёт черновик и подставляет creator_id из JWT, а не из запроса. Файлы image и video необязательны. Второй черновик того же пользователя — 400.
+// @Tags         Услуги
+// @Accept       multipart/form-data
+// @Produce      json
+// @Security     BearerAuth
+// @Param        name formData string true "Название"
+// @Param        description formData string true "Описание"
+// @Param        config_type formData string true "Тип конфигурации" Enums(Single Node, Clustering, Replication)
+// @Param        image formData file false "Изображение"
+// @Param        video formData file false "Видео"
+// @Success      201 {object} componentDetailResponse
+// @Failure      400 {object} errorResponse
+// @Failure      401 {object} errorResponse
+// @Failure      403 {object} errorResponse
+// @Failure      500 {object} errorResponse
+// @Router       /api/components [post]
 func (h *Handler) AddComponentAPI(ctx *gin.Context) {
 	user, ok := h.currentUser(ctx)
 	if !ok {
@@ -228,6 +309,22 @@ func (h *Handler) AddComponentAPI(ctx *gin.Context) {
 	})
 }
 
+// PublishComponentAPI godoc
+// @Summary      Публикация услуги
+// @Description  Только для авторизованного создателя. Переводит свой черновик в published и записывает uptime_percent, system_impact и formed_at.
+// @Tags         Услуги
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true "Идентификатор услуги"
+// @Param        body body publishRequest true "Расчётная доступность и влияние на систему"
+// @Success      200 {object} componentDetailResponse
+// @Failure      400 {object} errorResponse
+// @Failure      401 {object} errorResponse
+// @Failure      403 {object} errorResponse
+// @Failure      404 {object} errorResponse
+// @Failure      500 {object} errorResponse
+// @Router       /api/components/{id} [put]
 func (h *Handler) PublishComponentAPI(ctx *gin.Context) {
 	user, ok := h.currentUser(ctx)
 	if !ok {
@@ -282,6 +379,20 @@ func (h *Handler) PublishComponentAPI(ctx *gin.Context) {
 	h.writeComponentDetail(ctx, updated)
 }
 
+// DeleteComponentAPI godoc
+// @Summary      Удаление услуги
+// @Description  Только для авторизованного создателя. Мягкое удаление своей услуги: статус становится deleted.
+// @Tags         Услуги
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true "Идентификатор услуги"
+// @Success      200 {object} deleteResponse
+// @Failure      400 {object} errorResponse
+// @Failure      401 {object} errorResponse
+// @Failure      403 {object} errorResponse
+// @Failure      404 {object} errorResponse
+// @Failure      500 {object} errorResponse
+// @Router       /api/components/{id} [delete]
 func (h *Handler) DeleteComponentAPI(ctx *gin.Context) {
 	user, ok := h.currentUser(ctx)
 	if !ok {
@@ -311,6 +422,22 @@ func (h *Handler) DeleteComponentAPI(ctx *gin.Context) {
 	})
 }
 
+// LikeComponentAPI godoc
+// @Summary      Лайк услуги
+// @Description  Только для авторизованного пользователя. value=1 ставит лайк текущего пользователя, value=0 снимает. Повтор идемпотентен.
+// @Tags         Услуги
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path int true "Идентификатор услуги"
+// @Param        body body likeRequest true "1 — поставить, 0 — снять"
+// @Success      200 {object} likeResponse
+// @Failure      400 {object} errorResponse
+// @Failure      401 {object} errorResponse
+// @Failure      403 {object} errorResponse
+// @Failure      404 {object} errorResponse
+// @Failure      500 {object} errorResponse
+// @Router       /api/components/{id}/like [post]
 func (h *Handler) LikeComponentAPI(ctx *gin.Context) {
 	user, ok := h.currentUser(ctx)
 	if !ok {

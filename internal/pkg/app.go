@@ -34,6 +34,18 @@ func (a *Application) RunApp() {
 
 	serverAddress := fmt.Sprintf("%s:%d", a.Config.ServiceHost, a.Config.ServicePort)
 	// #region agent log
+	if f, err := os.OpenFile("/home/oaa/web-backend-availability/.cursor/debug-d429a1.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
+		payload, _ := json.Marshal(map[string]any{
+			"sessionId": "d429a1", "runId": "pre-fix", "hypothesisId": "A",
+			"location": "app.go:RunApp", "message": "about to listen",
+			"data":      map[string]any{"address": serverAddress},
+			"timestamp": time.Now().UnixMilli(),
+		})
+		_, _ = f.Write(append(payload, '\n'))
+		f.Close()
+	}
+	// #endregion
+	// #region agent log
 	if f, err := os.OpenFile("/home/oaa/web-backend-availability/.cursor/debug-be3810.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
 		payload, _ := json.Marshal(map[string]any{
 			"sessionId": "be3810", "runId": "pre-fix", "hypothesisId": "H1",
@@ -46,6 +58,18 @@ func (a *Application) RunApp() {
 	}
 	// #endregion
 	if err := a.Router.Run(serverAddress); err != nil {
+		// #region agent log
+		if f, logErr := os.OpenFile("/home/oaa/web-backend-availability/.cursor/debug-d429a1.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); logErr == nil {
+			payload, _ := json.Marshal(map[string]any{
+				"sessionId": "d429a1", "runId": "pre-fix", "hypothesisId": "A",
+				"location": "app.go:RunApp", "message": "listen failed",
+				"data":      map[string]any{"address": serverAddress, "error": err.Error()},
+				"timestamp": time.Now().UnixMilli(),
+			})
+			_, _ = f.Write(append(payload, '\n'))
+			f.Close()
+		}
+		// #endregion
 		// #region agent log
 		if f, logErr := os.OpenFile("/home/oaa/web-backend-availability/.cursor/debug-be3810.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); logErr == nil {
 			payload, _ := json.Marshal(map[string]any{

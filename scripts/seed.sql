@@ -2,9 +2,9 @@
 -- Сначала запустите миграции: go run ./cmd/migrate
 
 INSERT INTO users (id, login, password, is_moderator) VALUES
-  (1, 'user', 'user', false),
-  (2, 'admin', 'admin', true),
-  (3, 'user2', 'user2', false);
+  (1, 'user', '$2a$10$FYCkmJHRDKeVDsbskpqTiuar53uGI7ShtPVbseltf2/wR4PR0mgam', false),
+  (2, 'admin', '$2a$10$.delHu1qWJJ25O7zyCi1LuMW2LSiwfVvVJtPwg1T.lmLOn3WyLDye', true),
+  (3, 'user2', '$2a$10$dRJL7apD6WWkS8vFu1.mo.eKVz2XqA8pGldxuw6qYKYND3V9WPkwu', false);
 
 INSERT INTO components (
   id, name, description, status, image_url, video_url,

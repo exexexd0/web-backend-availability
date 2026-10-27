@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>web-backend-availability</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #1c1e21;
+      --side: #17181a;
+      --line: #2e3136;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --blue: #0a6bff;
+      --green: #0c8a43;
+      --json-key: #9cdcfe;
+      --json-str: #ce9178;
+      --json-num: #b5cea8;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.45 "Segoe UI", system-ui, sans-serif; }
+    .app { display: grid; grid-template-columns: 280px 1fr; height: 100vh; }
+    aside { background: var(--side); border-right: 1px solid var(--line); padding: 14px 0; }
+    .ws { padding: 0 16px 12px; font-weight: 650; }
+    .item { padding: 7px 16px; cursor: pointer; display: flex; gap: 8px; align-items: center; color: #d5d8dc; }
+    .item.active { background: #2a2d31; }
+    .m { font-weight: 700; width: 42px; font-size: 11px; }
+    .GET { color: #6bdd9a; } .POST { color: #ffb020; } .PUT { color: #c792ea; }
+    main { display: flex; flex-direction: column; min-width: 0; }
+    .crumb { padding: 10px 16px; color: var(--muted); border-bottom: 1px solid var(--line); }
+    .crumb b { color: var(--text); font-weight: 600; }
+    .bar { display: flex; gap: 8px; padding: 12px 16px; }
+    select, input, textarea, button { font: inherit; color: var(--text); background: #111214; border: 1px solid #3a3d42; border-radius: 4px; }
+    select { padding: 8px; }
+    input[type="text"], textarea { width: 100%; padding: 8px 10px; }
+    #send { background: var(--blue); border: 0; color: white; padding: 8px 18px; font-weight: 650; cursor: pointer; }
+    .tabs { display: flex; gap: 16px; padding: 0 16px; border-bottom: 1px solid var(--line); }
+    .tabs button { background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 8px 0; color: var(--muted); cursor: pointer; }
+    .tabs button.on { color: var(--text); border-bottom-color: #ff6c37; }
+    .panel { padding: 12px 16px; min-height: 92px; }
+    .hidden { display: none; }
+    label { display: block; color: var(--muted); margin-bottom: 6px; }
+    .response { border-top: 1px solid var(--line); flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .meta { display: flex; gap: 12px; align-items: center; padding: 10px 16px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; background: var(--green); color: white; border-radius: 4px; padding: 3px 8px; font-weight: 700; }
+    .pill.bad { background: #c23b3b; }
+    .pill .check { font-size: 14px; }
+    pre { margin: 0; padding: 0 16px 16px; overflow: auto; white-space: pre-wrap; }
+    .k { color: var(--json-key); } .s { color: var(--json-str); } .n { color: var(--json-num); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="ws">web-backend-availability</div>
+      <div class="item" data-id="draft"><span class="m GET">GET</span> черновик с JWT</div>
+      <div class="item" data-id="list"><span class="m GET">GET</span> все услуги</div>
+      <div class="item" data-id="filter"><span class="m GET">GET</span> все услуги, фильтр</div>
+      <div class="item" data-id="guest"><span class="m PUT">PUT</span> публикация гостем</div>
+      <div class="item" data-id="publish"><span class="m PUT">PUT</span> публикация услуги</div>
+    </aside>
+    <main>
+      <div class="crumb">web-backend-availability &gt; <b id="title">запрос</b></div>
+      <div class="bar">
+        <select id="method"><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option></select>
+        <input id="url" type="text">
+        <button id="send">Send</button>
+      </div>
+      <div class="tabs">
+        <button data-tab="auth" class="on">Authorization</button>
+        <button data-tab="headers">Headers</button>
+        <button data-tab="body">Body</button>
+      </div>
+      <div class="panel" id="auth">
+        <label>Type</label>
+        <select id="authType"><option value="bearer">Bearer Token</option><option value="none">No Auth</option></select>
+        <label style="margin-top:10px">Token</label>
+        <input id="token" type="text" placeholder="JWT из ответа аутентификации">
+      </div>
+      <div class="panel hidden" id="headers"></div>
+      <div class="panel hidden" id="bodyPanel">
+        <textarea id="reqBody" rows="5"></textarea>
+      </div>
+      <div class="response">
+        <div class="meta"><span id="pill"></span><span id="time" style="color:#9aa0a6"></span></div>
+        <pre id="out"></pre>
+      </div>
+    </main>
+  </div>
+  <script>
+    const presets = {
+      draft: { title: "черновик с JWT", method: "GET", path: "/api/components/draft", auth: "bearer", body: "" },
+      list: { title: "получение всех услуг", method: "GET", path: "/api/components", auth: "none", body: "" },
+      filter: { title: "все услуги без токена", method: "GET", path: "/api/components?uptime_percent=90", auth: "none", body: "" },
+      guest: { title: "публикация без авторизации", method: "PUT", path: "/api/components/6", auth: "none", body: '{"uptime_percent":97.4,"system_impact":15}' },
+      publish: { title: "публикация услуги", method: "PUT", path: "/api/components/6", auth: "bearer", body: '{"uptime_percent":97.4,"system_impact":15}' }
+    };
+    const method = document.getElementById("method");
+    const url = document.getElementById("url");
+    const authType = document.getElementById("authType");
+    const token = document.getElementById("token");
+    const reqBody = document.getElementById("reqBody");
+    const title = document.getElementById("title");
+    let current = "list";
+
+    function show(id) {
+      current = id;
+      const p = presets[id];
+      title.textContent = p.title;
+      method.value = p.method;
+      url.value = location.origin + p.path;
+      authType.value = p.auth;
+      reqBody.value = p.body;
+      document.querySelectorAll(".item").forEach(el => el.classList.toggle("active", el.dataset.id === id));
+      renderHeaders();
+    }
+    function renderHeaders() {
+      const lines = ["Accept: application/json"];
+      if (reqBody.value) lines.push("Content-Type: application/json");
+      if (authType.value === "bearer" && token.value.trim()) lines.push("Authorization: Bearer " + token.value.trim());
+      document.getElementById("headers").textContent = lines.join("\n");
+    }
+    document.querySelectorAll(".item").forEach(el => el.addEventListener("click", () => show(el.dataset.id)));
+    document.querySelectorAll(".tabs button").forEach(btn => btn.addEventListener("click", () => {
+      document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("on"));
+      btn.classList.add("on");
+      document.getElementById("auth").classList.toggle("hidden", btn.dataset.tab !== "auth");
+      document.getElementById("headers").classList.toggle("hidden", btn.dataset.tab !== "headers");
+      document.getElementById("bodyPanel").classList.toggle("hidden", btn.dataset.tab !== "body");
+    }));
+    authType.addEventListener("change", renderHeaders);
+    token.addEventListener("input", renderHeaders);
+    function colorize(value) {
+      const json = JSON.stringify(value, null, 2)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;");
+      return json.replace(/(\".*?\")(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d+)?/g, (m, str, colon) => {
+        if (colon) return '<span class="k">' + str + "</span>" + colon;
+        if (str) return '<span class="s">' + str + "</span>";
+        if (m === "true" || m === "false" || m === "null") return '<span class="n">' + m + "</span>";
+        return '<span class="n">' + m + "</span>";
+      });
+    }
+    document.getElementById("send").addEventListener("click", async () => {
+      const headers = { Accept: "application/json" };
+      if (reqBody.value) headers["Content-Type"] = "application/json";
+      if (authType.value === "bearer") headers.Authorization = "Bearer " + token.value.trim();
+      renderHeaders();
+      const started = performance.now();
+      const response = await fetch(url.value, { method: method.value, headers, body: reqBody.value || undefined });
+      const text = await response.text();
+      let parsed = text;
+      try { parsed = JSON.parse(text); } catch (e) {}
+      const ok = response.status >= 200 && response.status < 300;
+      document.getElementById("pill").innerHTML = '<span class="pill' + (ok ? "" : " bad") + '"><span class="check">✓</span> ' + response.status + " " + response.statusText + "</span>";
+      document.getElementById("time").textContent = Math.round(performance.now() - started) + " ms";
+      document.getElementById("out").innerHTML = typeof parsed === "string" ? parsed : colorize(parsed);
+    });
+    window.setLabToken = (value) => { token.value = value; renderHeaders(); };
+    show("list");
+  </script>
+</body>
+</html>

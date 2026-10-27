@@ -19,7 +19,9 @@ go run ./cmd/app
 ```
 
 Приложение: http://localhost:8081/components
+Swagger: http://localhost:8081/swagger/index.html
 Adminer: http://localhost:8083
+Redis: `localhost:6379`, пароль `password` (сервис `redis` в docker compose)
 
 ## MinIO
 
@@ -67,7 +69,7 @@ docker exec -it minio_storage mc anonymous set public myminio/media
 
 Успех: `{"status":"success","data":...}`. Ошибка: `{"status":"fail","message":"..."}`. Коды: 200, 201, 400, 404, 500.
 
-Текущий пользователь во всех методах домена услуги берётся из singleton `CurrentUser()` в `internal/app/repository/repository.go`. Идентификатор зафиксирован константой `currentUserID = DefaultCreatorID` (`1`, пользователь `user` из сида). Пока нет авторизации, клиент его не передаёт.
+Страницы HTML по-прежнему используют пользователя `DefaultCreatorID` (`1`). Методы API берут пользователя из JWT: `creator_id` при создании услуги заполняется идентификатором из токена и из запроса не принимается. Чтение списка и ленты работает без токена. Черновик, создание, публикация, удаление, лайк и выход требуют заголовок `Authorization: Bearer <access_token>`.
 
 Системные поля `id`, `status`, `creator_id`, `moderator_id`, `created_at`, `formed_at`, `completed_at`, а также `image_url` и `video_url` из запроса не принимаются. Их выставляет сервер. Лишнее поле в JSON или форме даёт 400.
 
@@ -113,11 +115,15 @@ docker exec -it minio_storage mc anonymous set public myminio/media
 
 `POST /api/users/login`
 
-Заглушка аутентификации для лабораторной 4. Всегда 200, сессия не создаётся.
+Аутентификация. JSON: `login`, `password`. Пароль сравнивается с bcrypt-хешем. Успех: `data.access_token`, `data.token_type` (`Bearer`) и `data.expires_in` (секунды). Неверная пара — 401.
 
 `POST /api/users/logout`
 
-Заглушка деавторизации для лабораторной 4. Всегда 200, сессия не сбрасывается.
+Деавторизация. Нужен заголовок `Authorization: Bearer <access_token>`. Токен записывается в Redis до истечения срока, значение ключа — логин пользователя. Повторный запрос с этим токеном — 403. Без токена — 401.
+
+Swagger UI: http://localhost:8081/swagger/index.html
+
+В Swagger без авторизации открыты регистрация, вход и чтение списка и ленты. Методы создателя помечены замком и требуют схему `BearerAuth`.
 
 ### Сериализаторы
 

@@ -11,8 +11,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/one-compressive/web-backend-availability/internal/app/config"
 	"github.com/one-compressive/web-backend-availability/internal/app/ds"
+	appredis "github.com/one-compressive/web-backend-availability/internal/app/redis"
 	"github.com/one-compressive/web-backend-availability/internal/app/repository"
+	"github.com/one-compressive/web-backend-availability/internal/app/role"
 	"github.com/one-compressive/web-backend-availability/internal/app/storage"
 	"github.com/sirupsen/logrus"
 )
@@ -33,10 +36,12 @@ const (
 type Handler struct {
 	Repository *repository.Repository
 	Storage    *storage.MediaStorage
+	Redis      *appredis.Client
+	JWT        config.JWTConfig
 }
 
-func NewHandler(r *repository.Repository, s *storage.MediaStorage) *Handler {
-	return &Handler{Repository: r, Storage: s}
+func NewHandler(r *repository.Repository, s *storage.MediaStorage, redisClient *appredis.Client, jwt config.JWTConfig) *Handler {
+	return &Handler{Repository: r, Storage: s, Redis: redisClient, JWT: jwt}
 }
 
 func debugLog(hypothesisID, location, message string, data map[string]any) {
@@ -65,6 +70,23 @@ func debugLog(hypothesisID, location, message string, data map[string]any) {
 func (h *Handler) RegisterHandler(router *gin.Engine) {
 	// #region agent log
 	router.Use(func(ctx *gin.Context) {
+		// #region agent log
+		if f, err := os.OpenFile("/home/oaa/web-backend-availability/.cursor/debug-d429a1.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644); err == nil {
+			payload, _ := json.Marshal(map[string]any{
+				"sessionId": "d429a1", "runId": "pre-fix", "hypothesisId": "B",
+				"location": "handler.go:request", "message": "request arrived",
+				"data": map[string]any{
+					"method":     ctx.Request.Method,
+					"host":       ctx.Request.Host,
+					"path":       ctx.Request.URL.Path,
+					"remoteAddr": ctx.Request.RemoteAddr,
+				},
+				"timestamp": time.Now().UnixMilli(),
+			})
+			_, _ = f.Write(append(payload, '\n'))
+			f.Close()
+		}
+		// #endregion
 		ctx.Next()
 		debugLog("H2", "handler.go:request", "http request finished", map[string]any{
 			"method": ctx.Request.Method,
@@ -85,17 +107,21 @@ func (h *Handler) RegisterHandler(router *gin.Engine) {
 	router.POST("/components/:id/delete", h.DeleteComponent)
 
 	api := router.Group("/api")
-	api.GET("/components", h.GetComponentsAPI)
-	api.GET("/components/draft", h.GetDraftAPI)
-	api.GET("/components/feed", h.GetFeedAPI)
-	api.GET("/components/feed/:id", h.GetFeedByIDAPI)
-	api.POST("/components", h.AddComponentAPI)
-	api.PUT("/components/:id", h.PublishComponentAPI)
-	api.DELETE("/components/:id", h.DeleteComponentAPI)
-	api.POST("/components/:id/like", h.LikeComponentAPI)
 	api.POST("/users", h.RegisterAPI)
 	api.POST("/users/login", h.LoginAPI)
-	api.POST("/users/logout", h.LogoutAPI)
+
+	api.GET("/components", h.OptionalAuth(), h.GetComponentsAPI)
+	api.GET("/components/feed", h.OptionalAuth(), h.GetFeedAPI)
+	api.GET("/components/feed/:id", h.OptionalAuth(), h.GetFeedByIDAPI)
+
+	creator := api.Group("")
+	creator.Use(h.RequireAuth(role.Creator, role.Moderator))
+	creator.POST("/users/logout", h.LogoutAPI)
+	creator.GET("/components/draft", h.GetDraftAPI)
+	creator.POST("/components", h.AddComponentAPI)
+	creator.PUT("/components/:id", h.PublishComponentAPI)
+	creator.DELETE("/components/:id", h.DeleteComponentAPI)
+	creator.POST("/components/:id/like", h.LikeComponentAPI)
 }
 
 func (h *Handler) errorHandler(ctx *gin.Context, errorStatusCode int, err error) {
